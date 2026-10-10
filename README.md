@@ -1,6 +1,6 @@
 # BFSI Risk & Data Quality Engine
 
-A PostgreSQL-based project for checking loan payment data quality and identifying payment-related risk at loan level.
+A PostgreSQL and Power BI portfolio project for validating loan payment data, identifying repayment risk, and analyzing data-quality issues at loan level.
 
 ## Project Overview
 
@@ -11,21 +11,28 @@ This project addresses both areas through two SQL-based components:
 - **Data Quality Engine** — identifies problems in payment data.
 - **Risk Engine** — analyzes payment behavior and assigns a loan-level risk classification.
 
-The final output combines customer details, loan details, risk indicators, and data-quality information at **one row per loan**.
+PostgreSQL performs the data-quality checks and risk calculations. Power BI provides interactive reporting and visual analysis using the validated SQL outputs.
+
+The final analytical output maintains **one row per loan**, combining loan details, risk indicators, and data-quality information.
 
 ## Project Architecture
 
-The project follows this flow:
+The project follows this workflow:
 
-Customer and loan data are combined with payment history. The payment data is evaluated by the Data Quality Engine and Risk Engine. The resulting risk and data-quality information is combined into a loan-level dataset that can be used for Power BI reporting.
-
+1. Generate controlled customer, loan, and payment datasets in PostgreSQL.
+2. Evaluate payment data using the Data Quality Engine.
+3. Analyze repayment behavior using the Risk Engine.
+4. Create reusable SQL views for data-quality issues and loan-level risk.
+5. Validate the business results and loan-level output.
+6. Connect Power BI to the validated PostgreSQL tables and views.
+7. Visualize portfolio risk and data-quality patterns through a two-page dashboard.
 
 ## Dataset
 
 The project uses controlled mock data generated in PostgreSQL.
 
 | Dataset | Records |
-|---------|---------|
+|---|---:|
 | Customers | 1,000 |
 | Loans | 1,500 |
 | Baseline payment records | 36,000 |
@@ -38,7 +45,7 @@ Controlled defects and risk scenarios were added after the baseline data was gen
 
 ## Data Quality Engine
 
-The Data Quality Engine checks for six types of issues:
+The Data Quality Engine checks for six types of issues.
 
 | Rule | Description |
 |---|---|
@@ -49,13 +56,13 @@ The Data Quality Engine checks for six types of issues:
 | DQ-05 | Invalid account status |
 | DQ-06 | Closed-to-Active account-status reversion |
 
-The consolidated results are stored in:
+The consolidated results are stored in the reusable SQL view:
 
 `vw_data_quality_issues`
 
-### DQ Validation
+### Data Quality Validation
 
-| Issue | Validated Records |
+| Issue | Validated Issue Rows |
 |---|---:|
 | Negative payment | 10 |
 | Duplicate payment records | 20 |
@@ -63,13 +70,17 @@ The consolidated results are stored in:
 | Invalid payment status | 10 |
 | Invalid account status | 10 |
 | State reversion | 10 |
-| **Total** | **60** |
+| **Total data-quality issue rows** | **60** |
+
+The 20 duplicate-payment issue rows represent 10 duplicate groups, with both records in each group flagged.
+
+A total of **10 distinct loans** are affected by data-quality issues.
 
 ## Risk Engine
 
-The Risk Engine analyzes payment history using SQL window functions and conditional aggregation.
+The Risk Engine analyzes payment history using SQL window functions, conditional aggregation, and business rules.
 
-The main risk signals are:
+The main risk signals include:
 
 - Missed payments
 - Consecutive missed payments
@@ -100,6 +111,8 @@ The reusable risk view is:
 | Normal | 1,494 |
 | **Total** | **1,500** |
 
+These counts reflect the final risk classification produced by the project's SQL rules.
+
 ## Final Business Output
 
 The final analytical dataset maintains a grain of **one row per loan**.
@@ -120,12 +133,66 @@ Total rows: 1,500
 Distinct loans: 1,500
 ```
 
-This confirms that the final joins do not introduce duplicate loan records.
+This confirms that the final analytical output contains one record for each distinct loan.
+
+## Power BI Dashboard
+
+The Power BI dashboard connects to PostgreSQL and presents the validated SQL results through two report pages.
+
+### Page 1 — BFSI Risk & Data Quality Overview
+
+This page provides a high-level summary of the loan portfolio through five KPI cards:
+
+| KPI | Validated Value |
+|---|---:|
+| Total Loans | 1,500 |
+| Critical Risk Loans | 1 |
+| High Risk Loans | 2 |
+| Loans with Data Quality Issues | 10 |
+| Total Data Quality Issues | 60 |
+
+It also includes two charts:
+
+- **Loans by Risk Classification** — shows the distribution of loans across Critical, High, Moderate, and Normal categories.
+- **Data Quality Issues by Type** — compares the number of flagged issue rows for each data-quality rule.
+
+### Page 2 — Risk & Data Quality Analysis
+
+This page provides a more detailed view of the loan portfolio through:
+
+- A risk-classification slicer for filtering the analysis.
+- A loan-level detail table showing risk classification and data-quality status.
+- A stacked column chart comparing risk classification with data-quality status.
+
+The detail table supports investigation of the affected loans and helps distinguish loans with data-quality issues from those without them.
+
+### Power BI Data Model
+
+The report imports the following PostgreSQL tables and views:
+
+- `bank_customers`
+- `loan_accounts`
+- `vw_loan_risk`
+- `vw_data_quality_issues`
+
+The raw `payment_logs` table is not imported into Power BI. Data-quality and risk logic remain in PostgreSQL, while Power BI is used for reporting, filtering, and visual analysis.
+
+### Dashboard Screenshots
+
+Dashboard screenshots are stored in the `06 Screenshots` folder.
+
+**Page 1 — Overview**
+
+![BFSI Risk & Data Quality Overview](06%20Screenshots/powerbi_page1_overview.png)
+
+**Page 2 — Risk & Data Quality Analysis**
+
+![Risk & Data Quality Analysis](06%20Screenshots/powerbi_page2_risk_analysis.png)
 
 ## SQL Techniques Used
 
 - PostgreSQL
-- CTEs
+- Common Table Expressions (CTEs)
 - Window functions
 - `LAG()`
 - `ROW_NUMBER()`
@@ -147,14 +214,6 @@ This confirms that the final joins do not introduce duplicate loan records.
 BFSI-Risk-Data-Quality-Engine/
 │
 ├── 01 Project Documentation/
-│   ├── 01_business_problem.md
-│   ├── 02_business_requirements.md
-│   ├── 03_data_model.md
-│   ├── 04_data_dictionary.md
-│   ├── 05_data_quality_rules.md
-│   ├── 06_risk_rules.md
-│   └── 07_project_flow.md
-│
 ├── 02 Sql/
 │   ├── 01_create_tables.sql
 │   ├── 02_generate_data.sql
@@ -165,7 +224,10 @@ BFSI-Risk-Data-Quality-Engine/
 ├── 03 Data/
 ├── 04 Analysis/
 ├── 05 Power Bi/
+│   └── BFSI Risk & Data Quality Dashboard.pbix
 ├── 06 Screenshots/
+│   ├── powerbi_page1_overview.png
+│   └── powerbi_page2_risk_analysis.png
 ├── 07 Project Notes/
 ├── .gitignore
 └── README.md
@@ -176,9 +238,9 @@ BFSI-Risk-Data-Quality-Engine/
 - PostgreSQL
 - pgAdmin
 - SQL
+- Power BI Desktop
 - Git
 - GitHub
-- Power BI
 
 ## Current Status
 
@@ -191,11 +253,14 @@ BFSI-Risk-Data-Quality-Engine/
 - Risk Engine
 - Risk classification
 - Reusable SQL views
-- Loan-level business output
-- Validation
+- Loan-level analytical output
+- Data-quality and risk validation
 - Project documentation
+- Power BI dashboard development
+- Two-page report with KPI cards, charts, slicer, and detail table
+- Dashboard screenshots
 - GitHub repository setup
 
-### Next
+### Future Improvements
 
-Power BI dashboard development using the validated SQL output.
+- Refine dashboard layout and visual consistency
